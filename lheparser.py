@@ -3,35 +3,36 @@ import re
 def main():
   print "/afs/cern.ch/user/a/akotwal/public/group.phys-gener.%s.%s.%s.TXT.%s._00001.events"%(generator, DSID, process, mcinfo)
   f = open("/afs/cern.ch/user/a/akotwal/public/group.phys-gener.%s.%s.%s.TXT.%s._00001.events"%(generator, DSID, process, mcinfo), 'r')
+
+  #event/splitfile
+  nsubevt = 5500
+
   commonblock = []
   l = f.readline()
   commonblock.append(l)
+  
   while (l.strip() != "</init>"):
     #print l
     l = f.readline()
     if (re.search(r"nevents", l)): 
       totevts = int(l.split()[0].strip())
-      fileIndex = 2 #(totevts/nsubevt)
-      print l
+      fileIndex = (totevts/nsubevt)
+      #print l
       l = re.sub(r"%s"%str(totevts), str(fileIndex), l)
-      print l
+      #print l
     commonblock.append(l)
-  
-  
-  print totevts
-  nsubevt = 2 #5500
-  
   
   #event block
   countevent = 0
   printflag = False
   eventset = []
   
-  lhenumber = 0 #number lhe
+  lhenumber = 0 #lhe split file number
   
   while (l.strip() != ""):
-    print printflag, "\t", l.strip()
+    #print printflag, "\t", l.strip()
     if (lhenumber == fileIndex):
+      eventset = eventset+eventblock
       break
     if (countevent == nsubevt): 
       lhenumber += 1
@@ -50,18 +51,25 @@ def main():
   
     if (printflag):
       eventblock.append(l)
-      print eventblock[-1]
+      #print eventblock[-1]
     l = f.readline()
-    print ">>", l.strip()
+    #print ">>", l.strip()
 
+# for the last file
+  while (l.strip() != ""):
+    eventset.append(l)
+    l = f.readline()
+    #print ">>", l.strip()
+  lhenumber += 1
+  filllhe(commonblock, eventset, lhenumber)
 
 def filllhe(commonblock, eventblock, lhenumber):
   foutnameprefix = "group.phys-gener.%s.%s.%s.TXT.%s"%(generator, DSID, process, mcinfo)
   foutnamesuffix = ".events"
-  lhenum = "._0" + str(lhenumber/10000.).split(".")[1]
+  lhenum = "._0" + ("%.4f"%(lhenumber/10000.)).split(".")[1]
   foutname = foutnameprefix + lhenum + foutnamesuffix
   fout = open(foutname, "w")
-  print foutname, "\t: ", eventblock
+  #print foutname, "\t: ", eventblock
   [fout.write(l) for l in commonblock + eventblock]
   fout.write("</LesHouchesEvents>" + "\n")
   fout.close()
